@@ -57,8 +57,8 @@ def generate_velocity_FD(x_points, y_points, dt):
     vy = []
     for i in range(len(x_points)-1):
 
-        vx.append(np.clip((x_points[i + 1] - x_points[i]) / dt, 0.5, 2.0))
-        vy.append(np.clip((y_points[i + 1] - y_points[i]) / dt, 0.5, 2.0))
+        vx.append((x_points[i + 1] - x_points[i]) / dt)
+        vy.append((y_points[i + 1] - y_points[i]) / dt)
 
     vx.append(vx[-1])
     vy.append(vy[-1])
