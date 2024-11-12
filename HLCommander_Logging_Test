@@ -52,6 +52,7 @@ from cflib.crazyflie.log import LogConfig
 import numpy as np
 import time
 import logging
+import csv
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
@@ -153,6 +154,11 @@ def figure_8_sequence_logging():
     x, y, z = generate_figure_8_points(a=0.5, num_points=50)  # Adjust 'a' for size and num_points as needed
     
     lg_stab = init_lg_stab()
+
+    # Initialize vectors to store state estimates and errors
+    state_estimates = []
+    errors = []
+
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         with PositionHlCommander(
                 scf,
@@ -165,24 +171,46 @@ def figure_8_sequence_logging():
 
             # Follow the figure-8 path
             for xi, yi, zi in zip(x[1:], y[1:], z[1:]):
-                pc.go_to(xi, yi, zi)
+                pc.go_to(xi, yi, zi)        
 
+                with SyncLogger(scf, lg_stab) as logger:
+                    for log_entry in logger:
+                        timestamp = log_entry[0]
+                        data = log_entry[1]
+                        logconf_name = log_entry[2]
+
+                        # Store state estimate
+                        state_estimate = [data['stateEstimate.x'], data['stateEstimate.y'], data['stateEstimate.z']]
+                        state_estimates.append(state_estimate)
+
+                        # Calculate and store error
+                        error = [xi - state_estimate[0], yi - state_estimate[1], zi - state_estimate[2]]
+                        errors.append(error)
+
+                        print(f'[{timestamp}][{logconf_name}]: State: {state_estimate}, Error: {error}')
+
+                        # Only log one entry per setpoint
+                        break
+            
             # Return to starting position
             pc.go_to(0.0, 0.0, 0.5)
 
-        with SyncLogger(scf, lg_stab) as logger:
-            endTime = time.time() + 10
+    # Convert lists to numpy arrays for easier manipulation
+    state_estimates = np.array(state_estimates)
+    errors = np.array(errors)
 
-            for log_entry in logger:
-                timestamp = log_entry[0]
-                data = log_entry[1]
-                logconf_name = log_entry[2]
+    #expect (num_points, 3)
+    # print("State Estimates shape:", state_estimates.shape)
+    # print("Errors shape:", errors.shape)
 
-                print('[%d][%s]: %s' % (timestamp, logconf_name, data))
+    # Write data to CSV file
+    with open('figure8_data.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['x_estimate', 'y_estimate', 'z_estimate', 'x_error', 'y_error', 'z_error'])
+        for state, error in zip(state_estimates, errors):
+            writer.writerow(list(state) + list(error))
 
-                if time.time() > endTime:
-                    break
-   
+    print("Data has been written to figure8_data.csv")
 
 #####################################
 #                                   #
@@ -216,12 +244,18 @@ def square_sequence_with_pauses(pc):
             # Return to the starting position
             pc.go_to(0.0, 0.0, 0.5)
 
+
 #####################################
 #                                   #
-#         Logging                   #
+#         Controller                #
 #                                   #
 #####################################
 
+#After attempting to go_to XYZ_ref, log values
+#log XYZ_actual, and calculate and store error
+#Pass XYZ_actual_i and XYZ_ref_i:i+N (or just timestep) to MPC/minimum jerk 
+#Find new X_bar and go_to
+#Repeat
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
