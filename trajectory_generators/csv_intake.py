@@ -77,6 +77,7 @@ def compute_curvature_three_points(x1, y1, x2, y2, x3, y3):
     # Circumradius of the triangle
     if area == 0:
         return np.inf
+        
     R = (a * b * c) / (4 * area)
 
     curvature = 1 / R
