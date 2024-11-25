@@ -2,4 +2,4 @@
 Crazyflie that draws using a magnetic stylus
 
 
-![](https://github.com/scott-wade/master/crazyflie_sketcher/gif.gif)
+![](https://github.com/scott-wade/crazyflie_sketcher/master/gif.gif)
