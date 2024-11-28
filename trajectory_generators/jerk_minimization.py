@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.interpolate import splprep, splev
-from MPC import rk4, quadrotor_dynamics
 from scipy.optimize import minimize
 
 data = pd.read_csv("heart_curve.csv", delimiter=",", header=1)
