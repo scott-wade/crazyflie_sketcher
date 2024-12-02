@@ -56,9 +56,10 @@ import csv
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
-
+file_name = "output.csv"
 # URI to the Crazyflie to connect to
-uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7E7')
+uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7E8')
+
 
 
 def slightly_more_complex_usage():
@@ -156,15 +157,24 @@ def figure_8_sequence_logging():
     # Initialize empty lists for x and y coordinates
     x = []
     y = []
-
+    z = []
+    x_dot = []
+    y_dot = []
+    z_dot =[]
+    scale = 2
+    offset = 0.1
     # Read the CSV file and populate the lists
-    with open('MJ_traj.csv', 'r') as file:
+    with open(file_name, 'r') as file:
         next(file)  # Skip the header row
         for line in file:
             values = line.strip().split(',')
-            if len(values) == 3:
-                x.append(float(values[1]))
-                y.append(float(values[2]))
+           
+            x.append(float(values[0])/scale +offset)
+            y.append(float(values[1])/scale +offset)
+            z.append(float(values[2]))
+            x_dot.append(float(values[7]))
+            y_dot.append(float(values[8]))
+            z_dot.append(float(values[9]))
 
     # Print the first few elements to verify
     print("First 5 x-coordinates:", x[:5])
@@ -172,76 +182,96 @@ def figure_8_sequence_logging():
     # Initialize an empty list for velocities
     velocities = []
 
-    # Read the CSV file and populate the velocities list
-    with open('MJ_traj_vel.csv', 'r') as file:
-        next(file)  # Skip the header row
-        for line in file:
-            values = line.strip().split(',')
-            if len(values) == 3:
-                x_vel = float(values[1])
-                y_vel = float(values[2])
-                norm_vel = (x_vel**2 + y_vel**2)**(0.5)
-                velocities.append(norm_vel)  # Append the velocity value
-
-    
-    
+    # # Read the CSV file and populate the velocities list
+    # with open('MJ_traj_vel.csv', 'r') as file:
+    #     next(file)  # Skip the header row
+    #     for line in file:
+    #         values = line.strip().split(',')
+    #         if len(values) == 3:
+    #             x_vel = float(values[1])
+    #             y_vel = float(values[2])
+                
+    #             velocities.append(norm_vel)  # Append the velocity value
+    x_dot = np.array([x_dot])
+    y_dot = np.array([y_dot])
+    z_dot = np.array([z_dot])
+    norm_vel = (x_dot**2 + y_dot**2 +z_dot**2)**(0.5)
+    norm_vel = norm_vel.tolist()
     lg_stab = init_lg_stab()
 
     # Initialize vectors to store state estimates and errors
     state_estimates = []
     errors = []
-    z_offset = 0.2
+    z_offset = 0.5
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         
         with PositionHlCommander(
                 scf,
-                x=0.0, y=0.0, z=0.0,
                 default_velocity=0.2,
-                default_height=z_offset+0.3, #TODO: match height
+                default_height=z_offset, #TODO: match height
                 controller=PositionHlCommander.CONTROLLER_PID) as pc:
             # Go to starting position
-            
-            
-            pc.go_to(0, 0, z_offset)
-            time.sleep(5)
-            pc.go_to(x[1], y[1], z_offset)
-            time.sleep(10) 
-            # Follow the figure-8 path
-            for xi, yi, vi in zip(x[1:], y[1:], velocities[1:]):
+            duration = 10
+            end_time = time.time() + duration
+            # while(time.time()<end_time):
+            #     pc.go_to(pc.go_to(0, 0, z_offset))
+            #     if tilt_angle > 20:
+            #         # Turn off motors
+            #         scf.cf.commander.send_stop_setpoint()
+            #         print("Propellers turned off: Tilt angle exceeded 20 degrees")
+            #         break   
+            #     time.sleep(0.01)
+            # end_time = time.time() + duration
+            # pc.go_to(x[0], y[0], z_offset)
+            # while(time.time()<end_time):
+            #     pc.go_to(x[0], y[0], z_offset)
+            #     attitude = scf.cf.state
+            #     tilt_angle = calculate_tilt_angle(attitude['roll'], attitude['pitch'], 1)
+            #     if tilt_angle > 20:
+            #         # Turn off motors
+            #         scf.cf.commander.send_stop_setpoint()
+            #         print("Propellers turned off: Tilt angle exceeded 20 degrees")
+            #         break
+            #     time.sleep(0.01)  
+            print(x)
+            pc.go_to(x[0], y[0], z_offset)
+            print("git got")
+            for xi, yi, zi, vi in zip(x, y, z, norm_vel[0]):
                 time.sleep(0.01)
                 if(vi==0):
                     vi = .2
                  # Calculate tilt angle
-                attitude = scf.cf.state
-                tilt_angle = calculate_tilt_angle(attitude['roll'], attitude['pitch'], 1)
+                # attitude = scf.cf.state
+                # tilt_angle = calculate_tilt_angle(attitude['roll'], attitude['pitch'], 1)
 
-                # Check if tilt angle exceeds 20 degrees
-                if tilt_angle > 20:
-                    # Turn off motors
-                    scf.cf.commander.send_stop_setpoint()
-                    print("Propellers turned off: Tilt angle exceeded 20 degrees")
-                    break        
-                pc.go_to(xi, yi,z=z_offset, velocity=abs(vi))        
+                # # Check if tilt angle exceeds 20 degrees
+                # if tilt_angle > 20:
+                #     # Turn off motors
+                #     scf.cf.commander.send_stop_setpoint()
+                #     print("Propellers turned off: Tilt angle exceeded 20 degrees")
+                #     break     
+                print(vi)   
+                pc.go_to(xi, yi,z=zi)#, velocity=abs(vi))        
                 
-                with SyncLogger(scf, lg_stab) as logger:
-                    for log_entry in logger:
-                        timestamp = log_entry[0]
-                        data = log_entry[1]
-                        logconf_name = log_entry[2]
+                # with SyncLogger(scf, lg_stab) as logger:
+                #     for log_entry in logger:
+                #         timestamp = log_entry[0]
+                #         data = log_entry[1]
+                #         logconf_name = log_entry[2]
 
-                        # Store state estimate
-                        state_estimate = [data['stateEstimate.x'], data['stateEstimate.y'], data['stateEstimate.z']]
-                        state_estimates.append(state_estimate)
+                #         # Store state estimate
+                #         state_estimate = [data['stateEstimate.x'], data['stateEstimate.y'], data['stateEstimate.z']]
+                #         state_estimates.append(state_estimate)
 
-                        # Calculate and store error
-                        error = [xi - state_estimate[0], yi - state_estimate[1], vi - state_estimate[2]]
-                        errors.append(error)
+                #         # Calculate and store error
+                #         error = [xi - state_estimate[0], yi - state_estimate[1], vi - state_estimate[2]]
+                #         errors.append(error)
 
-                        print(f'[{timestamp}][{logconf_name}]: State: {state_estimate}, Error: {error}')
+                #         print(f'[{timestamp}][{logconf_name}]: State: {state_estimate}, Error: {error}')
 
                         
-                        # Only log one entry per setpoint
-                        break
+                #         # Only log one entry per setpoint
+                #         break
             
             # Return to starting position
             pc.go_to(0.0, 0.0, 0.5)
@@ -274,7 +304,6 @@ def square_sequence_with_pauses(pc):
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         with PositionHlCommander(
                 scf,
-                x=0.0, y=0.0, z=0.0,
                 default_velocity=0.2,
                 default_height=0.5, #TODO: match height
                 controller=PositionHlCommander.CONTROLLER_PID) as pc:
