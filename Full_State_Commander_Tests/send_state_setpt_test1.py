@@ -42,7 +42,7 @@ from cflib.utils import uri_helper
 
 
 # URI to the Crazyflie to connect to
-uri = uri_helper.uri_from_env(default='radio://0/65/2M/E7E7E7E7F2')
+uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7E8')
 
 
 def quaternion_from_euler(roll: float, pitch: float, yaw: float):
