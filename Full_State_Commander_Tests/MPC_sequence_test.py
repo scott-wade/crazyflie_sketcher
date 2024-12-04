@@ -333,7 +333,36 @@ if __name__ == '__main__':
         log_conf.add_variable('kalman.stateY', 'float')
         log_conf.add_variable('kalman.stateZ', 'float')
 
-        
+        print('-----POSITION PID-----')
+        pzKp = scf.cf.param.get_value('posCtlPid.zKp')
+        print("Current pzKi:", pzKp)
+
+        new_pzKp = pzKp # write new value here
+        scf.cf.param.set_value('posCtlPid.zKp')
+        print("Updated pzKp:", new_pzKp)
+
+        pzKi = scf.cf.param.get_value('posCtlPid.zKi')
+        print("Current pzKi:", pzKi)
+
+        new_pzKi = pzKi # write new value here
+        scf.cf.param.set_value('posCtlPid.zKi')
+        print("Updated pzKi:", new_pzKi)
+
+        print('-----VELOCITY PID-----')
+
+        vzKp = scf.cf.param.get_value('velCtlPid.vzKp')
+        print("Current vzKp:", vzKp)
+
+        new_vzKp = vzKp # write new value here
+        scf.cf.param.get_value('velCtlPid.vzKp')
+        print("Updated vzKi:", new_vzKp)
+
+        vzKi = scf.cf.param.get_value('velCtlPid.vzKi')
+        print("Current vzKi:", vzKi)
+
+        new_vzKi = vzKi
+        scf.cf.param.set_value('velCtlPid.vzKi')
+        print("Updated vzKi:", new_vzKi)
         
         # Add the log config to the Crazyflie
         scf.cf.log.add_config(log_conf)
@@ -348,8 +377,8 @@ if __name__ == '__main__':
         
         # Stop logging
         log_conf.stop()
-    # Write data to CSV file
-        
 
+
+    # Write data to CSV file
         print("Data has been written to figure8_data.csv")
        
