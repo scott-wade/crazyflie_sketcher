@@ -334,34 +334,38 @@ if __name__ == '__main__':
         log_conf.add_variable('kalman.stateZ', 'float')
 
         print('-----POSITION PID-----')
+        # OG: 2.0
         pzKp = scf.cf.param.get_value('posCtlPid.zKp')
         print("Current pzKi:", pzKp)
 
-        new_pzKp = pzKp # write new value here
-        scf.cf.param.set_value('posCtlPid.zKp')
+        new_pzKp = pzKp 
+        scf.cf.param.set_value('posCtlPid.zKp', new_pzKp)
         print("Updated pzKp:", new_pzKp)
 
+        # OG: 0.5
         pzKi = scf.cf.param.get_value('posCtlPid.zKi')
         print("Current pzKi:", pzKi)
 
         new_pzKi = pzKi # write new value here
-        scf.cf.param.set_value('posCtlPid.zKi')
+        scf.cf.param.set_value('posCtlPid.zKi', new_pzKp)
         print("Updated pzKi:", new_pzKi)
 
         print('-----VELOCITY PID-----')
 
+        # OG: 25.0
         vzKp = scf.cf.param.get_value('velCtlPid.vzKp')
         print("Current vzKp:", vzKp)
 
         new_vzKp = vzKp # write new value here
-        scf.cf.param.get_value('velCtlPid.vzKp')
+        scf.cf.param.get_value('velCtlPid.vzKp', new_vzKp)
         print("Updated vzKi:", new_vzKp)
 
+        # OG: 15.0
         vzKi = scf.cf.param.get_value('velCtlPid.vzKi')
         print("Current vzKi:", vzKi)
 
         new_vzKi = vzKi
-        scf.cf.param.set_value('velCtlPid.vzKi')
+        scf.cf.param.set_value('velCtlPid.vzKi', new_vzKi)
         print("Updated vzKi:", new_vzKi)
         
         # Add the log config to the Crazyflie
@@ -373,7 +377,7 @@ if __name__ == '__main__':
         time.sleep(1)
     
         #get_current_state_estimates(scf)
-        run_MPC_sequence(scf, log_conf)
+        # run_MPC_sequence(scf, log_conf)
         
         # Stop logging
         log_conf.stop()
