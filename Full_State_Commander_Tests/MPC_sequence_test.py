@@ -56,9 +56,13 @@ logging.basicConfig(level=logging.ERROR)
 # ==============================
 
 #These values are measured before run
-x_offset = 0.25
-y_offset = 0.25
-z_offset = -0.13
+# #Original values
+# x_offset = 0.25
+# y_offset = 0.5
+# z_offset = -0.13
+x_offset = 0.0
+y_offset = 0.0
+z_offset = -0.168
 
 #These values are updated within position_callback
 set_initial_est = False
@@ -160,7 +164,7 @@ def position_callback(timestamp, data, logconf):
         z_est = z
         set_initial_est = True
         
-    print('pos: ({}, {}, {})'.format(x, y, z))
+    # print('pos: ({}, {}, {})'.format(x, y, z))
 
 # def get_current_state_estimates(scf):
 #     # Set up logging configuration
@@ -226,8 +230,8 @@ def traj2ref(Xref):
     
     global x_offset, y_offset, z_offset, x_est, y_est, z_est
     
-    
     Xref = Xref/4
+
    
     pos = [
         Xref[0] + x_offset,
@@ -246,7 +250,7 @@ def traj2ref(Xref):
 def run_MPC_sequence(scf, log_conf):
 
     #Parse MPC output and store states 
-    csv_output = parse_MPC_output('output_velocityTracking_fig8FD.csv')
+    csv_output = parse_MPC_output('../traj_gen_offlineMPC/output_velocityTracking_fig8FD.csv')
 
     #HL fly to board
     print("Flying to board via HLCommander...\n")
@@ -255,57 +259,58 @@ def run_MPC_sequence(scf, log_conf):
                 scf,
                 x=0.0, y=0.0, z=0.0,
                 default_velocity=0.5,
-                default_height=0.5, 
+                default_height=0.25, 
                 controller=PositionHlCommander.CONTROLLER_PID)
         # Go to starting position
-    pc.take_off(velocity=0.3)
+    print("Taking off...\n")
+    pc.take_off(velocity=0.5)
+    # x, y, z = get_position()
+    print("Flying to board via HLCommander...\n")
+    # current_x, current_y, current_z = pc.get_position()
+    # print(f"At estimated position x: {current_x} y: {current_y} z: {current_x}\n")
+    print(f"Going to position x: {pos[0]} y: {pos[1]} z: {pos[2]}\n")
     pc.go_to(pos[0], pos[1], pos[2], velocity=0.075)
-    print("reached starting point")
-    
-    # with MotionCommander(scf, default_height=0.5) as mc:
-    #     x_errorabs(curr_x-pos[0])
-    #     while(abs(curr_x-pos[0]) > 0.03):
-    #         print(curr_x-x_offset)
-    #         mc.back(0.001*(curr_x-x_offset)/abs(curr_x-x_offset))
-    #     while(abs(curr_y-y_offset) > 0.03):
-    #         print(curr_y-y_offset)
-    #         mc.right(0.005*(curr_y-y_offset)/abs(curr_y-y_offset))
-        
-    #     mc.down(0.5)
-    #     pass
 
-    
+    print("Reached starting point!\n")
+    #time.sleep(0.7)
+
     #LL follow points
-    cf = scf.cf
     print("Switching command to LLCommander to draw...\n")
+    # start by holding initial location
+    cf = scf.cf
+    wait_duration = 3.5
+    pos, vel, acc, ori, rollrate, pitchrate, yawrate = traj2ref(csv_output[0])
+    send_continuous_setpoint(cf, wait_duration, pos, vel, acc, ori, rollrate, pitchrate, yawrate)
+    
+    # start following the trajectory
     state_estimates = []
     errors = []
     for full_state in csv_output:
         pos, vel, acc, ori, rollrate, pitchrate, yawrate = traj2ref(full_state)
 
         send_continuous_setpoint(cf, dt, pos, vel, acc, ori, rollrate, pitchrate, yawrate)
-        print('Set point: ({}, {}, {})'.format(pos[0], pos[1], pos[2]))
+        # print('Set point: ({}, {}, {})'.format(pos[0], pos[1], pos[2]))
         state_estimates.append([curr_x,curr_y,curr_z])
         errors.append([curr_x-pos[0],curr_y-pos[1],curr_z-pos[2]])
-        # with SyncLogger(scf, log_conf) as logger:
-        #     for log_entry in logger:
-        #         timestamp = log_entry[0]
-        #         data = log_entry[1]
-        #         logconf_name = log_entry[2]
+        with SyncLogger(scf, log_conf) as logger:
+            for log_entry in logger:
+                timestamp = log_entry[0]
+                data = log_entry[1]
+                logconf_name = log_entry[2]
 
-        #         # Store state estimate
-        #         state_estimate = [data['stateEstimate.x'], data['stateEstimate.y'], data['stateEstimate.z']]
-        #         state_estimates.append(state_estimate)
+                # Store state estimate
+                state_estimate = [data['stateEstimate.x'], data['stateEstimate.y'], data['stateEstimate.z']]
+                state_estimates.append(state_estimate)
 
-        #         # Calculate and store error
-        #         error = [pos[0] - state_estimate[0], pos[1] - state_estimate[1], pos[2] - state_estimate[2]]
-        #         errors.append(error)
+                # Calculate and store error
+                error = [pos[0] - state_estimate[0], pos[1] - state_estimate[1], pos[2] - state_estimate[2]]
+                errors.append(error)
 
-        #         print(f'[{timestamp}][{logconf_name}]: State: {state_estimate}, Error: {error}')
+                print(f'[{timestamp}][{logconf_name}]: State: {state_estimate}, Error: {error}')
 
                 
-        #         # Only log one entry per setpoint
-        #         break
+                # Only log one entry per setpoint
+                break
     with open('figure8_data.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['x_estimate', 'y_estimate', 'z_estimate', 'x_error', 'y_error', 'z_error'])
@@ -377,7 +382,7 @@ if __name__ == '__main__':
         time.sleep(1)
     
         #get_current_state_estimates(scf)
-        # run_MPC_sequence(scf, log_conf)
+        run_MPC_sequence(scf, log_conf)
         
         # Stop logging
         log_conf.stop()
