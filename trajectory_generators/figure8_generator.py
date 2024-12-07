@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def generate_figure_8_coordinates(a=1, num_points=1000):
-    t = np.linspace(0, 2 * np.pi, num_points)
+    t = np.linspace(-np.pi, np.pi, num_points)
     x = a * np.sin(t)
     y = a * np.sin(t) * np.cos(t)
     return x, y
 
-def normalize_pts(x_points, y_points):
+def normalize_pts(x_points, y_points, max_x = .25, max_y = .25):
     x_min = np.min(x_points)
     x_max = np.max(x_points)
     y_min = np.min(y_points)
@@ -18,8 +18,8 @@ def normalize_pts(x_points, y_points):
     y_range = y_max - y_min
     scale = max(x_range, y_range)
 
-    x_points = (x_points - x_min) / scale
-    y_points = (y_points - y_min) / scale
+    x_points = (x_points - x_min) / scale * max_x
+    y_points = (y_points - y_min) / scale * max_y
 
     return x_points, y_points
 
@@ -41,15 +41,10 @@ def plot_XYV_points(x_points, y_points, vx, vy, title, save_path=None):
 
 
 def generate_velocity_FD(x_points, y_points, dt):
-    vx = []
-    vy = []
-    for i in range(len(x_points)-1):
-
-        vx.append((x_points[i + 1] - x_points[i]) / dt)
-        vy.append((y_points[i + 1] - y_points[i]) / dt)
-
-    vx.append(vx[-1])
-    vy.append(vy[-1])
+    vx = np.diff(x_points) / dt
+    vy = np.diff(y_points) / dt
+    vx = np.append(vx, vx[-1])
+    vy = np.append(vy, vy[-1])
     
     return vx, vy
 
@@ -60,45 +55,74 @@ def compute_curvature_three_points(x1, y1, x2, y2, x3, y3):
 
     # Heron's formula
     s = (a + b + c) / 2
-    area = np.sqrt(s * (s - a) * (s - b) * (s - c))
+    area = np.sqrt(max(s * (s - a) * (s - b) * (s - c), 0))
 
     # Circumradius of the triangle
-    if area == 0:
-        return np.inf
+    if area < 1e-10 or a < 1e-10 or b < 1e-10 or c < 1e-10:
+        return 0.0
         
-    R = (a * b * c) / (4 * area)
-
-    curvature = 1 / R
+    R = (a * b * c) / (4 * area + 1e-6)
+    curvature = 1 / R 
     return curvature
 
 def generate_velocity_curve(x_points, y_points, dt):
-    vx = []
-    vy = []
-    
+    vx, vy, curvatures = [], [], [0]
+
     for i in range(1, len(x_points) - 1):
         curvature = compute_curvature_three_points(
             x_points[i - 1], y_points[i - 1],
             x_points[i], y_points[i],
             x_points[i + 1], y_points[i + 1]
         )
+        curvatures.append(curvature)
 
-        vel = 1 / (curvature + 1e-6) 
+    for idx in range(1, len(curvatures)):
+        if curvatures[idx] < 1e-2:
+            curvatures[idx] = curvatures[idx - 1]
 
-        vel = np.clip(vel, 0.5, 2.0)
+    for idx in range(2, -1, -1):
+        curvatures[idx] = curvatures[idx + 2] 
 
-        direction_x = (x_points[i + 1] - x_points[i - 1]) / (2 * dt)
-        direction_y = (y_points[i + 1] - y_points[i - 1]) / (2 * dt)
-        norm = np.sqrt(direction_x**2 + direction_y**2)
-        dir_x = direction_x / (norm + 1e-6)
-        dir_y = direction_y / (norm + 1e-6)
+    curvatures = np.array(curvatures)
+    velocities = 1 / (curvatures + 1e-6)
+    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6)
 
-        vx.append(vel * dir_x)
-        vy.append(vel * dir_y)
-    
+    plt.figure(figsize=(8, 4))
+    plt.plot(curvatures, label="Curvature", color="blue")
+    plt.title("Curvature Values Along the Trajectory")
+    plt.xlabel("Point Index")
+    plt.ylabel("Curvature")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    for i in range(1, len(x_points) - 1):
+        vel = velocities[i - 1]
+        direction = np.array([
+            (x_points[i + 1] - x_points[i - 1]) / (2 * dt),
+            (y_points[i + 1] - y_points[i - 1]) / (2 * dt)
+        ])
+        direction /= np.linalg.norm(direction) + 1e-6
+
+        vx.append(vel * direction[0])
+        vy.append(vel * direction[1])
+
     vx = [vx[0]] + vx + [vx[-1]]
     vy = [vy[0]] + vy + [vy[-1]]
-
     return vx, vy
+
+def moving_average(data, window_size=10):
+    half_window = window_size // 2
+    padded_data = np.pad(data, pad_width=half_window, mode='edge')
+    smoothed_data = np.convolve(padded_data, np.ones(window_size)/window_size, mode='valid')
+    return smoothed_data
+
+def smooth_trajectory(x_points, y_points, vx, vy, window_size=5):
+    x_points_smooth = moving_average(x_points, window_size)
+    y_points_smooth = moving_average(y_points, window_size)
+    vx_smooth = moving_average(vx, window_size)
+    vy_smooth = moving_average(vy, window_size)
+    return x_points_smooth, y_points_smooth, vx_smooth, vy_smooth
 
 def create_ref(x_points, y_points, vx, vy, filename):
     Xref = np.zeros((len(x_points),12))
@@ -120,12 +144,13 @@ def create_ref(x_points, y_points, vx, vy, filename):
 x, y = generate_figure_8_coordinates()
 
 x_norm, y_norm = normalize_pts(x, y)
-vx, vy = generate_velocity_FD(x_norm, y_norm, 0.1)
-plot_XYV_points(x_norm, y_norm, vx, vy, "Trajectory with Forward Difference Velocity", 
+vx_fd, vy_fd = generate_velocity_FD(x_norm, y_norm, 0.1)
+plot_XYV_points(x_norm, y_norm, vx_fd, vy_fd, "Trajectory with Forward Difference Velocity", 
                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots\f8_FD.png")
-create_ref(x_norm, y_norm, vx, vy, "f8_FD.csv")
+create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD.csv")
 
-vx, vy = generate_velocity_curve(x_norm, y_norm, 0.1)
-plot_XYV_points(x_norm, y_norm, vx, vy, "Trajectory with Inverse Curvature Velocity", 
+vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
+x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
+plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots\f8_curve.png")
-create_ref(x_norm, y_norm, vx, vy, "f8_curve.csv")
+create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_curve.csv")
