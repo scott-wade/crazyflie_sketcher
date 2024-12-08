@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def generate_figure_8_coordinates(a=1, num_points=20):
+def generate_figure_8_coordinates(a=1, num_points=1000):
     t = np.linspace(-np.pi, np.pi, num_points)
     x = a * np.sin(t)
     y = a * np.sin(t) * np.cos(t)
@@ -85,7 +85,7 @@ def generate_velocity_curve(x_points, y_points, dt):
 
     curvatures = np.array(curvatures)
     velocities = 1 / (curvatures + 1e-6)
-    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6)
+    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6) * 0.5
 
     plt.figure(figsize=(8, 4))
     plt.plot(curvatures, label="Curvature", color="blue")
@@ -128,7 +128,7 @@ def create_ref(x_points, y_points, vx, vy, filename):
     Xref = np.zeros((len(x_points),12))
     Xref[:,0] = x_points
     Xref[:,1] = y_points
-    Xref[:,2] = 0.5 * np.ones((1, len(x_points)))
+    Xref[:,2] = np.zeros((1, len(x_points)))
     Xref[:,3] = vx
     Xref[:,4] = vy
 
@@ -146,11 +146,11 @@ x, y = generate_figure_8_coordinates()
 x_norm, y_norm = normalize_pts(x, y)
 vx_fd, vy_fd = generate_velocity_FD(x_norm, y_norm, 0.1)
 plot_XYV_points(x_norm, y_norm, vx_fd, vy_fd, "Trajectory with Forward Difference Velocity", 
-                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD_20.png")
-create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD_20.csv")
+                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD.png")
+create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD.csv")
 
 vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
 x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
 plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
-                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_20.png")
-create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_curve_20.csv")
+                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve.png")
+create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_curve.csv")
