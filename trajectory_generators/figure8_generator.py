@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def generate_figure_8_coordinates(a=1, num_points=1000):
-    t = np.linspace(-np.pi, np.pi, num_points)
+    t = np.linspace(-3/2 * np.pi, np.pi / 2, num_points)
     x = a * np.sin(t)
     y = a * np.sin(t) * np.cos(t)
     return x, y
@@ -156,8 +156,8 @@ plot_XYV_points(x_norm, y_norm, vx_fd, vy_fd, "Trajectory with Forward Differenc
                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD_newstart.png")
 create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD_newstart.csv")
 
-vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
-x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
-plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
-                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_newstart.png")
-create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_newstart.csv")
+# vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
+# x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
+# plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
+#                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_newstart.png")
+# create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_newstart.csv")
