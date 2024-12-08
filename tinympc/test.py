@@ -70,7 +70,20 @@ N = 20 #
 
 # Set up the problem
 prob = tinympc.TinyMPC()
-prob.setup(A, B, Q, R, N)
+# Assuming x, y, z velocities are at indices 3, 4, 5 in your state vector
+v_max = 0.5  # Maximum allowed velocity
+v_min = -v_max  # Minimum allowed velocity
+
+# Create state constraint vectors
+x_min = np.array([-np.inf] * 12)  # Assuming 12 states
+x_max = np.array([np.inf] * 12)
+
+# Set velocity constraints
+x_min[3:5] = v_min
+x_max[3:5] = v_max
+
+# Set up the problem with constraints
+prob.setup(A, B, Q, R, N, x_min=x_min, x_max=x_max)
 
 
 # Define initial condition
@@ -113,7 +126,7 @@ for i, state in enumerate(states):
         continue
 with open('figure8_data.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['x', 'y', 'z', '_', '_', '_', '_', '_', '_', '_', '_', '_'])
+        writer.writerow(['x', 'y', 'z', 'p', 'q', 'r', 'x_dot', 'y_dot', 'z_dot', 'p_dot', 'q_dot', 'r_dot'])
         for state in (xs):
             writer.writerow(list(state))
 
