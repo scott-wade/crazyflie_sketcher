@@ -43,9 +43,16 @@ def plot_XYV_points(x_points, y_points, vx, vy, title, save_path=None):
 def generate_velocity_FD(x_points, y_points, dt):
     vx = np.diff(x_points) / dt
     vy = np.diff(y_points) / dt
+
     vx = np.append(vx, vx[-1])
     vy = np.append(vy, vy[-1])
-    
+
+    num_ramp = 100
+    ramp = np.linspace(0, 1, num_ramp)
+
+    vx[:num_ramp] = ramp * vx[num_ramp - 1]
+    vy[:num_ramp] = ramp * vy[num_ramp - 1]
+
     return vx, vy
 
 def compute_curvature_three_points(x1, y1, x2, y2, x3, y3):
@@ -66,13 +73,13 @@ def compute_curvature_three_points(x1, y1, x2, y2, x3, y3):
     return curvature
 
 def generate_velocity_curve(x_points, y_points, dt):
-    vx, vy, curvatures = [], [], [0]
+    vx, vy, curvatures = [], [], [0, 0]
 
-    for i in range(1, len(x_points) - 1):
+    for i in range(2, len(x_points) - 2):
         curvature = compute_curvature_three_points(
-            x_points[i - 1], y_points[i - 1],
+            x_points[i - 2], y_points[i - 2],
             x_points[i], y_points[i],
-            x_points[i + 1], y_points[i + 1]
+            x_points[i + 2], y_points[i + 2]
         )
         curvatures.append(curvature)
 
@@ -146,11 +153,11 @@ x, y = generate_figure_8_coordinates()
 x_norm, y_norm = normalize_pts(x, y)
 vx_fd, vy_fd = generate_velocity_FD(x_norm, y_norm, 0.1)
 plot_XYV_points(x_norm, y_norm, vx_fd, vy_fd, "Trajectory with Forward Difference Velocity", 
-                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD_smallest.png")
-create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD_smallest.csv")
+                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD_newstart.png")
+create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD_newstart.csv")
 
 vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
 x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
 plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
-                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_smallest.png")
-create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_smallest.csv")
+                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_newstart.png")
+create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_newstart.csv")

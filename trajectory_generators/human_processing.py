@@ -4,7 +4,7 @@ import pandas as pd
 
 filename = "pure_xy/human.csv"
 
-def normalize_pts(x_points, y_points, z_points, scale_x = 0.25, scale_y = 0.25):
+def normalize_pts(x_points, y_points, z_points, scale_x = 0.15, scale_y = 0.15):
     x_min = np.min(x_points)
     x_max = np.max(x_points)
     y_min = np.min(y_points)
@@ -44,7 +44,7 @@ def circle_gen(x_points, y_points, z_points):
     n_circle = 400    # Number of points for the circular path
 
     # Generate straight-line path
-    x_straight = np.linspace(x_points[-1], 0.1, n_straight)
+    x_straight = np.linspace(x_points[-1], 0.025, n_straight)
     y_straight = y_points[-1] * np.ones_like(x_straight)
     t = np.linspace(0, np.pi, n_straight)
     z_straight = np.sin(t)
@@ -55,10 +55,10 @@ def circle_gen(x_points, y_points, z_points):
 
     # Generate circular path
     theta = np.linspace(0, 2 * np.pi, n_circle)  
-    radius = 0.025
+    radius = 0.015
 
-    x_circle = radius * np.cos(theta) + 0.075
-    y_circle = radius * 1.5 * np.sin(theta) + y_points[-1]
+    x_circle = radius * np.cos(theta) + 0.04
+    y_circle = radius * np.sin(theta) + y_points[-1]
     z_circle = np.zeros_like(theta) 
 
     x_points = np.hstack((x_points, x_circle))
