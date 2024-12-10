@@ -60,9 +60,9 @@ logging.basicConfig(level=logging.ERROR)
 # x_offset = 0.25
 # y_offset = 0.5
 # z_offset = -0.13
-x_offset = 0.3
-y_offset = -0.15
-z_offset = -0.23
+x_offset = 0.5
+y_offset = -0.0
+z_offset = -0.208
 
 #These values are updated within position_callback
 set_initial_est = False
@@ -255,7 +255,7 @@ def traj2ref(Xref):
 def run_MPC_sequence(scf, log_conf):
 
     #Parse MPC output and store states 
-    csv_output = parse_MPC_output('Monday_trajectories/output_cloudFD_4board_MAGNET.csv')
+    csv_output = parse_MPC_output('Monday_trajectories/output_circleFD_4board_MAGNET.csv')
 
     #HL fly to board
     print("Flying to board via HLCommander...\n")
@@ -316,7 +316,7 @@ def run_MPC_sequence(scf, log_conf):
         #         # Only log one entry per setpoint
         #         break
     
-    with open('results/cloud_magnet.csv', 'w', newline='') as csvfile:
+    with open('results/circle_magnet.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['x_estimate', 'y_estimate', 'z_estimate', 'x_error', 'y_error', 'z_error'])
         for state, error in zip(state_estimates, errors):
@@ -330,7 +330,7 @@ def run_MPC_sequence(scf, log_conf):
     cf.commander.send_notify_setpoint_stop()
     pc.go_to(.2,.2,.2, velocity=0.1)
     pc.go_to(0.00,0.00,0.05, velocity=0.1)
-    pc.go_to(0.01,0.01,0.00, velocity=0.1)
+    pc.go_to(0.03,0.03,0.00, velocity=0.1)
     pc.land()
 
     # Make sure that the last packet leaves before the link is closed

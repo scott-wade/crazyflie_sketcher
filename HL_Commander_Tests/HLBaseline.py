@@ -62,9 +62,9 @@ logging.basicConfig(level=logging.ERROR)
 # x_offset = 0.25
 # y_offset = 0.5
 # z_offset = -0.13
-x_offset = 0.3
-y_offset = 0.0
-z_offset = -0.18
+x_offset = 0.25
+y_offset = -0.15
+z_offset = -0.208
 file_name = ''
 
 #These values are updated within position_callback
@@ -271,7 +271,7 @@ def run_MPC_sequence(scf, log_conf):
     pos[2] = initial_z_offset
     print(f"Going to position x: {pos[0]} y: {pos[1]} z: {pos[2]}\n")
 
-    pc.go_to(pos[0], pos[1], pos[2], velocity=0.5)
+    pc.go_to(pos[0], pos[1], pos[2], velocity=0.075)
 
     print("Reached starting point!\n")
 
@@ -285,7 +285,7 @@ def run_MPC_sequence(scf, log_conf):
         pos = traj2ref(full_state)
 
         # Follow the figure-8 path
-        pc.go_to(pos[0], pos[1], pos[2])
+        pc.go_to(pos[0], pos[1], pos[2], velocity=0.075)
         # print('Set point: ({}, {}, {})'.format(pos[0], pos[1], pos[2]))
         state_estimates.append([curr_x,curr_y,curr_z])
         errors.append([curr_x-pos[0],curr_y-pos[1],curr_z-pos[2]])
@@ -302,8 +302,8 @@ def run_MPC_sequence(scf, log_conf):
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     #cf.commander.send_notify_setpoint_stop()
     pc.go_to(.2,.2,.2, velocity=0.1)
-    pc.go_to(0.05,0.05,.05, velocity=0.1)
-    pc.go_to(0.05,0.05,.05, velocity=0.1)
+    pc.go_to(0.00,0.00,0.05, velocity=0.1)
+    pc.go_to(0.01,0.01,0.00, velocity=0.1)
     pc.land()
 
     # Make sure that the last packet leaves before the link is closed

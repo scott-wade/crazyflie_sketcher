@@ -44,6 +44,7 @@ from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.positioning.position_hl_commander import PositionHlCommander
 from cflib.utils import uri_helper
 from cflib.positioning.motion_commander import MotionCommander
+from scipy.spatial.transform import Rotation
 import numpy as np
 
 
@@ -62,7 +63,7 @@ logging.basicConfig(level=logging.ERROR)
 # z_offset = -0.13
 x_offset = 0.3
 y_offset = 0.0
-z_offset = -0.178
+z_offset = -0.184
 
 #These values are updated within position_callback
 set_initial_est = False
@@ -75,7 +76,7 @@ curr_z = 0.0
 dt = 0.01 # 100Hz
 
 #This value prevents the HL Commander goto and the first LL command from overshooting
-initial_z_offset = -0.16
+initial_z_offset = z_offset+0.018
 
 # ==============================
 # Math Helper Functions
@@ -207,6 +208,7 @@ def parse_MPC_output(filename):
     Xref = []
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file)
+        next(csv_reader, None)  # skip the headers
         # Iterate through each row in the CSV file
         for row in csv_reader:
             row2 = row.copy()
@@ -217,14 +219,21 @@ def parse_MPC_output(filename):
     
     # Calculate numerical acceleration
     accels = []
+    quats = []
     for i in range(len(Xref) - 1):
-        accels.append((np.array(Xref[i][7:10], dtype=float) - np.array(Xref[i+1][7:10], dtype=float))*dt)
+        accels.append((np.array(Xref[i][6:9], dtype=float) - np.array(Xref[i+1][6:9], dtype=float))*dt)
+        
+    for i in range(len(Xref)):
+        quats.append(quaternion_from_euler(Xref[i][3],Xref[i][4],Xref[i][5]))
+         
     accels.append([0.0,0.0,0.0])
     output = np.hstack((np.array(Xref), np.array(accels)))
+    output2 = np.hstack((output[:,0:3], quats, output[:,6:]))
+
     # print(accelarr.shape)
     # print(np.array(Xref).shape)
     # print(output.shape)
-    return output
+    return output2
 
 def traj2ref(Xref):
     # takes Xref in format [pos, quat, vel, rollrate, accel]
@@ -233,7 +242,6 @@ def traj2ref(Xref):
     
     global x_offset, y_offset, z_offset, x_est, y_est, z_est
     
-    Xref = Xref/4.5
    
     pos = [
         Xref[0] + x_offset,
@@ -241,17 +249,19 @@ def traj2ref(Xref):
         z_offset
     ]
 
+
+    
     ori = Xref[3:7]
     vel = Xref[7:10]
     rollrate = Xref[10]
     pitchrate = Xref[11]
     yawrate = Xref[12]
+    acc = Xref[13:16]
     
     
     #Calculate the acceleration using forward difference and divide by timestep. Append last element again
     #to make arrays the same size
-    acc = np.diff(pos)/0.01
-    np.append(acc, acc[-1])
+    
     
     return pos, vel, acc, ori, rollrate, pitchrate, yawrate
 
@@ -318,7 +328,7 @@ def run_MPC_sequence(scf, log_conf):
                 
         #         # Only log one entry per setpoint
         #         break
-    with open('figure8_data.csv', 'w', newline='') as csvfile:
+    with open('results.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['x_estimate', 'y_estimate', 'z_estimate', 'x_error', 'y_error', 'z_error'])
         for state, error in zip(state_estimates, errors):
