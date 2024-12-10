@@ -5,7 +5,7 @@ from scipy.interpolate import splprep, splev
 from MPC import rk4, quadrotor_dynamics
 from scipy.optimize import minimize
 
-data = pd.read_csv("f8_curve_20.csv", delimiter=",", header=1)
+data = pd.read_csv("circle_traj_20pts_xyz.csv", delimiter=",", header=1)
 
 def find_init_point(array):
     array = np.asarray(array)
@@ -66,38 +66,74 @@ y_rotated = -y_points
 num_spline_pts = 200
 
 tck, u = splprep([x_points, y_rotated], s=0)  # tck is the spline representation
-x_dense, y_dense = splev(np.linspace(0, 1, num_spline_pts), tck)  # Dense spline evaluation
+x_dense, y_dense = splev(np.linspace(0, .1, num_spline_pts), tck)  # Dense spline evaluation
 
 traj_pos = []
 traj_vel = []
 
-"""DONT CHANGE"""
 dt = 1
-ddt = dt / 10
+ddt = dt / 10  
 
-# Let's assume equal timesteps of 0.1s between all points 
-# Calculate incrememts of 0.01 between waypoints as straight line segments
-for i in range(len(x_points)-1):
-    for tau in np.arange(0, dt, ddt):
-        pos_poly = 6 * tau ** 5 - 15 * tau ** 4 + 10 * tau ** 3
-        vel_poly = 30 * tau ** 4 - 60 * tau ** 3 + 30 * tau ** 2 # only if we wanted to go to zero
+traj_pos = []  
+traj_vel = []  
+total_time = 0  
 
-        pos = [x_points[i] + (x_points[i + 1] - x_points[i]) * pos_poly, 
-               y_points[i] + (y_points[i + 1] - y_points[i]) * pos_poly,
-               z_points[i] + (z_points[i + 1] - z_points[i]) * pos_poly,]
+for i in range(len(x_points) - 1):
+    x1 = np.array([x_points[i], y_points[i], z_points[i]])  # Start point
+    x2 = np.array([x_points[i+1], y_points[i+1], z_points[i+1]])  # End point
 
-        vel = [(x_points[i + 1] - x_points[i]) * vel_poly / 0.1,
-               (y_points[i + 1] - y_points[i]) * vel_poly / 0.1,
-               (z_points[i + 1] - z_points[i]) * vel_poly / 0.1]
+    t1 = 0
+    t2 = dt
 
-        traj_pos.append(pos.copy())
-        traj_vel.append(vel.copy())
+    # Coefficient matrix for quintic polynomial
+    A = np.array([
+        [1, t1, t1**2, t1**3, t1**4, t1**5],
+        [0, 1, 2*t1, 3*t1**2, 4*t1**3, 5*t1**4],
+        [0, 0, 2, 6*t1, 12*t1**2, 20*t1**3],
+        [1, t2, t2**2, t2**3, t2**4, t2**5],
+        [0, 1, 2*t2, 3*t2**2, 4*t2**3, 5*t2**4],
+        [0, 0, 2, 6*t2, 12*t2**2, 20*t2**3],
+    ])
+
+    # Boundary conditions for position, velocity, and acceleration
+    b_x = [x1[0], 0, 0, x2[0], 0, 0]  
+    b_y = [x1[1], 0, 0, x2[1], 0, 0]  
+    b_z = [x1[2], 0, 0, x2[2], 0, 0]  
+
+    # Solve for coefficients
+    c_x = np.linalg.solve(A, b_x)
+    c_y = np.linalg.solve(A, b_y)
+    c_z = np.linalg.solve(A, b_z)
+
+    # Generate trajectory points for this segment
+    time_segment = np.arange(t1, t2, ddt)
+    for t in time_segment:
+        # Evaluate position
+        pos = [
+            np.polyval(c_x[::-1], t),
+            np.polyval(c_y[::-1], t),
+            np.polyval(c_z[::-1], t),
+        ]
+
+        # Evaluate velocity (first derivative of position)
+        vel = [
+            np.polyval(np.polyder(c_x[::-1]), t),
+            np.polyval(np.polyder(c_y[::-1]), t),
+            np.polyval(np.polyder(c_z[::-1]), t),
+        ]
+
+        traj_pos.append(pos)
+        traj_vel.append(vel)
+
+    total_time += dt  # Update total time
 
 traj_pos = np.array(traj_pos)
 traj_vel = np.array(traj_vel)
 
-t = np.arange(0, dt * (traj_vel.shape[0]), dt)
+# Correctly define time array
+t = np.linspace(0, total_time, len(traj_pos))
 
+# Save the trajectory to a CSV file
 create_ref(traj_pos[:, 0], traj_pos[:, 1], traj_pos[:, 2], traj_vel[:, 0], traj_vel[:, 1], traj_vel[:, 2], "f8_curve_20_jerkmin.csv")
 
 # Figure 1: 3D plot of jerk-minimized points
