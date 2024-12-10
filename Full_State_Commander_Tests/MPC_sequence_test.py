@@ -61,8 +61,8 @@ logging.basicConfig(level=logging.ERROR)
 # y_offset = 0.5
 # z_offset = -0.13
 x_offset = 0.3
-y_offset = 0.0
-z_offset = -0.178
+y_offset = -0.15
+z_offset = -0.23
 
 #These values are updated within position_callback
 set_initial_est = False
@@ -75,7 +75,7 @@ curr_z = 0.0
 dt = 0.01 # 100Hz
 
 #This value prevents the HL Commander goto and the first LL command from overshooting
-initial_z_offset = -0.16
+initial_z_offset = z_offset+0.018
 
 # ==============================
 # Math Helper Functions
@@ -207,8 +207,10 @@ def parse_MPC_output(filename):
     Xref = []
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file)
+        #next(csv_reader, None)  # skip the headers
         # Iterate through each row in the CSV file
         for row in csv_reader:
+            row = row[0:13]
             row2 = row.copy()
             for x,element in enumerate(row):
                 row2[x]=float(element)
@@ -233,12 +235,12 @@ def traj2ref(Xref):
     
     global x_offset, y_offset, z_offset, x_est, y_est, z_est
     
-    Xref = Xref/4.5
+    
    
     pos = [
         Xref[0] + x_offset,
         Xref[1] + y_offset ,
-        z_offset
+        Xref[2] + z_offset
     ]
 
     ori = Xref[3:7]
@@ -253,7 +255,7 @@ def traj2ref(Xref):
 def run_MPC_sequence(scf, log_conf):
 
     #Parse MPC output and store states 
-    csv_output = parse_MPC_output('../traj_gen_offlineMPC/output_velocityTracking_fig8FD.csv')
+    csv_output = parse_MPC_output('Monday_trajectories/output_cloudFD_4board_MAGNET.csv')
 
     #HL fly to board
     print("Flying to board via HLCommander...\n")
@@ -313,7 +315,8 @@ def run_MPC_sequence(scf, log_conf):
                 
         #         # Only log one entry per setpoint
         #         break
-    with open('figure8_data.csv', 'w', newline='') as csvfile:
+    
+    with open('results/cloud_magnet.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['x_estimate', 'y_estimate', 'z_estimate', 'x_error', 'y_error', 'z_error'])
         for state, error in zip(state_estimates, errors):
@@ -322,8 +325,13 @@ def run_MPC_sequence(scf, log_conf):
     #HL land
     print("Switching back to HLCommander...\n")
     cf.commander.send_stop_setpoint()
+    
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
+    pc.go_to(.2,.2,.2, velocity=0.1)
+    pc.go_to(0.00,0.00,0.05, velocity=0.1)
+    pc.go_to(0.01,0.01,0.00, velocity=0.1)
+    pc.land()
 
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
@@ -345,7 +353,7 @@ if __name__ == '__main__':
         pzKp = scf.cf.param.get_value('posCtlPid.zKp')
         print("Current pzKi:", pzKp)
 
-        new_pzKp = pzKp 
+        new_pzKp = float(pzKp)#+1
         scf.cf.param.set_value('posCtlPid.zKp', new_pzKp)
         print("Updated pzKp:", new_pzKp)
 
@@ -353,7 +361,7 @@ if __name__ == '__main__':
         pzKi = scf.cf.param.get_value('posCtlPid.zKi')
         print("Current pzKi:", pzKi)
 
-        new_pzKi = pzKi # write new value here
+        new_pzKi = float(pzKi) #+0.15 # write new value here
         scf.cf.param.set_value('posCtlPid.zKi', new_pzKp)
         print("Updated pzKi:", new_pzKi)
 
