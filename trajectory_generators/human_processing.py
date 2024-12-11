@@ -47,7 +47,7 @@ def circle_gen(x_points, y_points, z_points):
     x_straight = np.linspace(x_points[-1], 0.165, n_straight)
     y_straight = y_points[-1] * np.ones_like(x_straight)
     t = np.linspace(0, np.pi, n_straight)
-    z_straight = np.sin(t)
+    z_straight = 0.1 * np.sin(t)
 
     x_points = np.hstack((x_points, x_straight))
     y_points = np.hstack((y_points, y_straight))
@@ -73,9 +73,9 @@ def circle_gen(x_points, y_points, z_points):
     ax = plt.axes(projection='3d')
 
     ax.scatter3D(x_points, y_points, z_points, c=np.arange(len(x_points)), cmap='Greens')
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
     ax.set_title("Trajectory Positions")
 
     plt.savefig(r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\pure_xy\human_plot_3D.png", format='png', dpi=300, bbox_inches='tight')
@@ -83,6 +83,48 @@ def circle_gen(x_points, y_points, z_points):
     plt.show()
 
     return x_points, y_points, z_points
+
+def moving_average(data, window_size=10):
+    half_window = window_size // 2
+    padded_data = np.pad(data, pad_width=half_window, mode='edge')
+    smoothed_data = np.convolve(padded_data, np.ones(window_size)/window_size, mode='valid')
+    return smoothed_data
+
+def smooth_trajectory(x_points, y_points, z_points, vx, vy, vz, window_size=5):
+    x_points_smooth = moving_average(x_points, window_size)
+    y_points_smooth = moving_average(y_points, window_size)
+    z_points_smooth = moving_average(z_points, window_size)
+    vx_smooth = moving_average(vx, window_size)
+    vy_smooth = moving_average(vy, window_size)
+    vz_smooth = moving_average(vz, window_size)
+    return x_points_smooth, y_points_smooth, z_points_smooth, vx_smooth, vy_smooth, vz_smooth
+
+def generate_velocity_FD(x_points, y_points, z_points, dt):
+    vx, vy, vz = [], [], []
+    for i in range(len(x_points) - 1):
+        vx.append((x_points[i + 1] - x_points[i]) / dt)
+        vy.append((y_points[i + 1] - y_points[i]) / dt)
+        vz.append((z_points[i + 1] - z_points[i]) / dt)
+    vx.append(vx[-1])
+    vy.append(vy[-1])
+    vz.append(vz[-1])
+    return vx, vy, vz
+
+def plot_3D_trajectory(x_points, y_points, z_points, velocities, title, save_path=None):
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(x_points, y_points, z_points, c=velocities, cmap='viridis', s=50)
+
+    cbar = fig.colorbar(scatter, ax=ax, label='Velocity Magnitude (m/s)', shrink=0.8)
+    
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
+    ax.set_title(title)
+    if save_path:
+        plt.savefig(save_path, format='png', dpi=300, bbox_inches='tight')
+    plt.show()
+
 
 data = pd.read_csv(filename, delimiter=",", header=0)
 x = data.values[:,0]
@@ -100,14 +142,20 @@ plot_XY_points(x_norm, y_norm, "Input Points", r"C:\Users\daesc\OneDrive\Desktop
 
 x_norm, y_norm, z_norm = circle_gen(x_norm, y_norm, z_norm)
 
-x_norm, y_norm, z_norm = normalize_pts(x_norm, y_norm, z_norm, 1, 1)
-
 plot_XY_points(x_norm, y_norm, "Input Points", r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\pure_xy\human_plot.png")
 
+vx, vy, vz = generate_velocity_FD(x_norm, y_norm, z_norm, 0.1)
+x_avg, y_avg, z_avg, vx, vy, vz = smooth_trajectory(x_norm, y_norm, z_norm, vx, vy, vz, window_size=7)
+vel_mag = np.sqrt(np.array(vx)**2 + np.array(vy)**2 + np.array(vz)**2)
+plot_3D_trajectory(x_avg, y_avg, z_avg, vel_mag, "Trajectory with Forward Difference Velocity", "human_FD_3D.png")
+
 Xref = np.zeros((len(x_norm),12))
-Xref[:, 0] = x_norm
-Xref[:, 1] = y_norm
-Xref[:, 2] = z_norm
+Xref[:, 0] = x_avg
+Xref[:, 1] = y_avg
+Xref[:, 2] = z_avg
+Xref[:, 3] = vx
+Xref[:, 4] = vy
+Xref[:, 5] = vz
 
 df = pd.DataFrame({"x": Xref[:,0], "y": Xref[:,1], "z": Xref[:,2], 
                        "u": Xref[:,3], "v": Xref[:,4], "w": Xref[:,5], 
