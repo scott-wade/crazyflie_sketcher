@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-filename = "human_head.csv"
+filename = "kitty.csv"
 
 def normalize_pts(x_points, y_points, z_points, max_x = .45, max_y = .45):
     x_min = np.min(x_points)
@@ -200,10 +200,10 @@ vx, vy, vz = generate_velocity_FD(x_norm, y_norm, z_norm, 0.1)
 x_avg, y_avg, z_avg, vx, vy, vz = smooth_trajectory(x_norm, y_norm, z_norm, vx, vy, vz, window_size=7)
 vel_mag = np.sqrt(np.array(vx)**2 + np.array(vy)**2 + np.array(vz)**2)
 plot_3D_trajectory(x_avg, y_avg, z_avg, vel_mag, "Trajectory with Forward Difference Velocity", "cloud_FD_3D.png")
-create_ref(x_avg, y_avg, z_avg, vx, vy, vz, "human_head_FD.csv")
+create_ref(x_avg, y_avg, z_avg, vx, vy, vz, "kitty_FD.csv")
 
 vx, vy, vz = generate_velocity_curve_3D(x_avg, y_avg, z_avg, 0.1)
 # x_avg, y_avg, z_avg, vx, vy, vz = smooth_trajectory(x_norm, y_norm, z_norm, vx, vy, vz, window_size=5)
 vel_mag = np.sqrt(np.array(vx)**2 + np.array(vy)**2 + np.array(vz)**2)
 plot_3D_trajectory(x_avg, y_avg, z_avg, vel_mag, "Trajectory with Inverse Curvature Velocity", "cloud_curve_3D.png")
-create_ref(x_avg, y_avg, z_avg, vx, vy, vz, "human_head_curve.csv")
+create_ref(x_avg, y_avg, z_avg, vx, vy, vz, "kitty_curve.csv")

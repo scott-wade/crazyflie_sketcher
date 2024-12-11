@@ -62,9 +62,9 @@ logging.basicConfig(level=logging.ERROR)
 # x_offset = 0.25
 # y_offset = 0.5
 # z_offset = -0.13
-x_offset = 0.25
-y_offset = -0.15
-z_offset = -0.208
+x_offset = 0.3
+y_offset = -0.1
+z_offset = -0.205
 file_name = ''
 
 #These values are updated within position_callback
