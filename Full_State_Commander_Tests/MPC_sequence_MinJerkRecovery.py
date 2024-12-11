@@ -60,9 +60,9 @@ logging.basicConfig(level=logging.ERROR)
 # x_offset = 0.25
 # y_offset = 0.5
 # z_offset = -0.13
-x_offset = 0.3
-y_offset = 0.0
-z_offset = -0.178
+x_offset = 0.2
+y_offset = -0.0
+z_offset = -0.20
 
 #These values are updated within position_callback
 set_initial_est = False
@@ -200,6 +200,13 @@ def send_continuous_setpoint(cf, duration, pos, vel, acc, orientation, rollrate,
     # Set points must be sent continuously to the Crazyflie, if not it will think that connection is lost
     end_time = time.time() + duration
     while time.time() < end_time:
+        print('pos: ', pos)
+        print('vel: ', vel)
+        print('acc: ', acc)
+        print('orientation: ', orientation)
+        print('rollrate: ', rollrate)
+        print('pitchrate: ', pitchrate)
+        print('yawrate: ', yawrate)
         cf.commander.send_full_state_setpoint(pos, vel, acc, orientation, rollrate, pitchrate, yawrate)
         # time.sleep(0.2)
 
@@ -255,9 +262,10 @@ def traj2ref(Xref):
     
     return pos, vel, acc, ori, rollrate, pitchrate, yawrate
 
-def recover_traj(current_pos, desired_pos):
+def recover_traj(current_pos, desired_pos, desired_vel):
     x1 = current_pos.copy()  # Start point
     x2 = desired_pos.copy()  # End point
+    v2 = desired_vel.copy()
 
     t1 = 0
     t2 = dt
@@ -273,9 +281,9 @@ def recover_traj(current_pos, desired_pos):
     ])
 
     # Boundary conditions for position, velocity, and acceleration
-    b_x = [x1[0], 0, 0, x2[0], 0, 0]  
-    b_y = [x1[1], 0, 0, x2[1], 0, 0]  
-    b_z = [x1[2], 0, 0, x2[2], 0, 0]  
+    b_x = [x1[0], 0, 0, x2[0], v2[0], 0]  
+    b_y = [x1[1], 0, 0, x2[1], v2[1], 0]  
+    b_z = [x1[2], 0, 0, x2[2], v2[2], 0]  
 
     # Solve for coefficients
     c_x = np.linalg.solve(A, b_x)
@@ -305,9 +313,9 @@ def recover_traj(current_pos, desired_pos):
             np.polyval(np.polyder(np.polyder(c_z[::-1])), t),
         ]
 
+        print('done!')
         send_continuous_setpoint(scf.cf, dt, pos, vel, acc, 
-                                 np.array([1,0,0,0]), np.array([0,0,0]), 
-                                 np.array([0,0,0]), np.array([0,0,0]))
+                                 [1.,0.,0.,0.], 0., 0., 0.)
 
 
 def run_MPC_sequence(scf, log_conf):
@@ -363,13 +371,16 @@ def run_MPC_sequence(scf, log_conf):
         if current_deviation >= max_deviation: 
             pos_np = np.array(pos)  
             lift_pos = pos_np + np.array([0,0,.05]) 
+            lift_pos.tolist()
             
             # lift off slightly and stop advancing
-            send_continuous_setpoint(cf, dt, lift_pos, np.zeros_like(vel), np.zeros_like(acc), 
-                                     np.array([1,0,0,0]), np.zeros_like(rollrate), 
-                                     np.zeros_like(pitchrate), np.zeros_like(yawrate))
+            send_continuous_setpoint(cf, dt, lift_pos, [0., 0., 0.], [0., 0., 0.], 
+                                     [1., 0., 0., 0.], 0., 0., 0.,)
             
-            recover_traj(np.array(state_estimates[-1]), pos_np)
+            print('current: ',np.array([curr_x,curr_y,curr_z]))
+            print('desired: ', pos_np)
+            
+            recover_traj(lift_pos, pos_np, vel)
 
         # with SyncLogger(scf, log_conf) as logger:
         #     for log_entry in logger:
