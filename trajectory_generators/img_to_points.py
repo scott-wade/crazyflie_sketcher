@@ -78,8 +78,13 @@ plt.legend()
 plt.grid()
 plt.show()
 
+
+max_x = ordered_points[:, 0].max()
+max_y = ordered_points[:, 1].max()
+inverted_points = np.array([[x, max_y - y] for x, y in ordered_points])
+
 output_filename = "acsi_text_2.csv"
-pd.DataFrame(ordered_points.astype(float), columns=["x", "y"]).to_csv(output_filename, index=False)
+pd.DataFrame(inverted_points.astype(float), columns=["x", "y"]).to_csv(output_filename, index=False)
 print(f"Points exported to {output_filename}")
 
 # Wait and close windows
