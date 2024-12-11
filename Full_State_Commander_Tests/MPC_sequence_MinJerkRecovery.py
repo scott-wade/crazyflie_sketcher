@@ -74,7 +74,7 @@ curr_y = 0.0
 curr_z = 0.0
 dt = 0.01 # 100Hz
 
-max_deviation = 0.05 #  > (X_real_i - X_ref_i) ^ 2
+max_deviation = 0.015 #  > (X_real_i - X_ref_i) ^ 2
 current_deviation = 0.0
 
 #This value prevents the HL Commander goto and the first LL command from overshooting
@@ -256,8 +256,8 @@ def traj2ref(Xref):
     return pos, vel, acc, ori, rollrate, pitchrate, yawrate
 
 def recover_traj(current_pos, desired_pos):
-    x1 = np.array(current_pos)  # Start point
-    x2 = np.array(desired_pos)  # End point
+    x1 = current_pos.copy()  # Start point
+    x2 = desired_pos.copy()  # End point
 
     t1 = 0
     t2 = dt
@@ -354,18 +354,22 @@ def run_MPC_sequence(scf, log_conf):
         # print('Set point: ({}, {}, {})'.format(pos[0], pos[1], pos[2]))
         state_estimates.append([curr_x,curr_y,curr_z])
         errors.append([curr_x-pos[0],curr_y-pos[1],curr_z-pos[2]])
+        curr_error = np.array(errors[-1])
 
+        # Checking deviation from path against error threshold
         global max_deviation
-        current_deviation = np.sqrt((errors[-1] @ errors[-1].T) ** 2)
+        current_deviation = np.sqrt(curr_error@ curr_error.T)
 
-        if current_deviation >= max_deviation:   
+        if current_deviation >= max_deviation: 
+            pos_np = np.array(pos)  
+            lift_pos = pos_np + np.array([0,0,.05]) 
             
             # lift off slightly and stop advancing
-            send_continuous_setpoint(cf, dt, pos + np.array([0,0,.05]), np.zeros_like(vel), np.zeros_like(acc), 
+            send_continuous_setpoint(cf, dt, lift_pos, np.zeros_like(vel), np.zeros_like(acc), 
                                      np.array([1,0,0,0]), np.zeros_like(rollrate), 
                                      np.zeros_like(pitchrate), np.zeros_like(yawrate))
             
-            recover_traj(state_estimates[-1], pos + np.array([0,0,.05]))
+            recover_traj(np.array(state_estimates[-1]), pos_np)
 
         # with SyncLogger(scf, log_conf) as logger:
         #     for log_entry in logger:
