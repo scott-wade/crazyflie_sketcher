@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def generate_figure_8_coordinates(a=1, num_points=1000):
-    t = np.linspace(-3/2 * np.pi, np.pi / 2, num_points)
+    t = np.linspace(-np.pi, np.pi, num_points)
     x = a * np.sin(t)
     y = a * np.sin(t) * np.cos(t)
     return x, y
@@ -47,11 +47,11 @@ def generate_velocity_FD(x_points, y_points, dt):
     vx = np.append(vx, vx[-1])
     vy = np.append(vy, vy[-1])
 
-    num_ramp = 100
-    ramp = np.linspace(0, 1, num_ramp)
+    # num_ramp = 100
+    # ramp = np.linspace(0, 1, num_ramp)
 
-    vx[:num_ramp] = ramp * vx[num_ramp - 1]
-    vy[:num_ramp] = ramp * vy[num_ramp - 1]
+    # vx[:num_ramp] = ramp * vx[num_ramp - 1]
+    # vy[:num_ramp] = ramp * vy[num_ramp - 1]
 
     return vx, vy
 
@@ -92,7 +92,7 @@ def generate_velocity_curve(x_points, y_points, dt):
 
     curvatures = np.array(curvatures)
     velocities = 1 / (curvatures + 1e-6)
-    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6) * 0.5
+    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6) * 0.01
 
     plt.figure(figsize=(8, 4))
     plt.plot(curvatures, label="Curvature", color="blue")
@@ -101,6 +101,10 @@ def generate_velocity_curve(x_points, y_points, dt):
     plt.ylabel("Curvature")
     plt.grid(True)
     plt.legend()
+    
+
+    plt.savefig(r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve.png", format='png', dpi=300, bbox_inches='tight')
+
     plt.show()
 
     for i in range(1, len(x_points) - 1):
@@ -156,8 +160,8 @@ plot_XYV_points(x_norm, y_norm, vx_fd, vy_fd, "Trajectory with Forward Differenc
                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_FD_newstart.png")
 create_ref(x_norm, y_norm, vx_fd, vy_fd, "f8_FD_newstart.csv")
 
-# vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
-# x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
-# plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
-#                 r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_newstart.png")
+vx_curve, vy_curve = generate_velocity_curve(x_norm, y_norm, 0.1)
+x_smooth, y_smooth, vx_smooth, vy_smooth = smooth_trajectory(x_norm, y_norm, vx_curve, vy_curve)
+plot_XYV_points(x_smooth, y_smooth, vx_smooth, vy_smooth, "Trajectory with Inverse Curvature Velocity", 
+                r"C:\Users\daesc\OneDrive\Desktop\F24\ACSI\Project\crazyflie_sketcher\trajectory_generators\output_plots_xref\f8_curve_newstart.png")
 # create_ref(x_smooth, y_smooth, vx_smooth, vy_smooth, "f8_newstart.csv")

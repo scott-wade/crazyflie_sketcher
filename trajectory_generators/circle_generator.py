@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def generate_circle_coordinates(a=.1, num_points=1000):
+def generate_circle_coordinates(a=.45, num_points=1000):
     theta = np.linspace(0, 2*np.pi, num_points)
     x = a * np.sin(theta)
     y = a * np.cos(theta)
