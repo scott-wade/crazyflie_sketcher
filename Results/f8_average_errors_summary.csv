@@ -1,0 +1,4 @@
+File,Average x_Error,Average y_Error,Average z_Error
+../HL_Commander_Tests/results_f8.csv,0.027112169389272175,0.030767458171061385,0.003595328059077211
+../Full_State_Commander_Tests/results/figure8_no_magnet.csv,0.0492818925841841,0.058952204200883145,0.0081199005952913
+../Full_State_Commander_Tests/results/figure8_magnet.csv,0.042867912319392576,0.05723535764820828,0.004739369990083327

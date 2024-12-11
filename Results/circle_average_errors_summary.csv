@@ -1,0 +1,4 @@
+File,Average x_Error,Average y_Error,Average z_Error
+../HL_Commander_Tests/circle_results.csv,0.02541163860173026,0.026632410272800222,0.004571544781327197
+../Full_State_Commander_Tests/results/circle_no_magnet.csv,0.030525727808483172,0.03542772193282868,0.002851454280146978
+../Full_State_Commander_Tests/results/circle_magnet.csv,0.03191494311290792,0.03547867440315365,0.0034410442404218524

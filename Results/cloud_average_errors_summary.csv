@@ -1,0 +1,4 @@
+File,Average x_Error,Average y_Error,Average z_Error
+../HL_Commander_Tests/cloud_results.csv,0.0312640386854616,0.030010837977546313,0.005684043207764573
+../Full_State_Commander_Tests/results/cloud_no_magnet.csv,0.045663402144716723,0.03530642347995537,0.005351839065689047
+../Full_State_Commander_Tests/results/cloud_magnet.csv,0.04363205000845972,0.0400682195531844,0.00713170321042451
