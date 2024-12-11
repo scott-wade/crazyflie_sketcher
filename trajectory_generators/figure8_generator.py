@@ -8,7 +8,7 @@ def generate_figure_8_coordinates(a=1, num_points=1000):
     y = a * np.sin(t) * np.cos(t)
     return x, y
 
-def normalize_pts(x_points, y_points, max_x = .2, max_y = .2):
+def normalize_pts(x_points, y_points, max_x = .45, max_y = .45):
     x_min = np.min(x_points)
     x_max = np.max(x_points)
     y_min = np.min(y_points)

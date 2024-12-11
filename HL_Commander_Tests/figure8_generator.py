@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def generate_figure_8_coordinates(a=1, num_points=1000):
-    t = np.linspace(-3/2 * np.pi, np.pi / 2, num_points)
+    t = np.linspace(-np.pi, 0, num_points)
     x = a * np.sin(t)
     y = a * np.sin(t) * np.cos(t)
     return x, y
@@ -47,11 +47,11 @@ def generate_velocity_FD(x_points, y_points, dt):
     vx = np.append(vx, vx[-1])
     vy = np.append(vy, vy[-1])
 
-    num_ramp = 100
-    ramp = np.linspace(0, 1, num_ramp)
+    # num_ramp = 100
+    # ramp = np.linspace(0, 1, num_ramp)
 
-    vx[:num_ramp] = ramp * vx[num_ramp - 1]
-    vy[:num_ramp] = ramp * vy[num_ramp - 1]
+    # vx[:num_ramp] = ramp * vx[num_ramp - 1]
+    # vy[:num_ramp] = ramp * vy[num_ramp - 1]
 
     return vx, vy
 
@@ -92,7 +92,7 @@ def generate_velocity_curve(x_points, y_points, dt):
 
     curvatures = np.array(curvatures)
     velocities = 1 / (curvatures + 1e-6)
-    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6) * 0.5
+    velocities = (velocities - np.min(velocities)) / (np.max(velocities) - np.min(velocities) + 1e-6) * 0.04
 
     plt.figure(figsize=(8, 4))
     plt.plot(curvatures, label="Curvature", color="blue")
