@@ -7,7 +7,7 @@ import pandas as pd
 
 ''' Drawing to Points '''
 # Read the image
-original = cv2.imread('hello2.png')
+original = cv2.imread('ashley.png')
 
 gray_img = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
 _, binary_img = cv2.threshold(gray_img, 127, 255, cv2.THRESH_BINARY)
@@ -15,8 +15,8 @@ inverted_img = cv2.bitwise_not(binary_img)
 skeleton = cv2.ximgproc.thinning(inverted_img, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
 skeleton_inverted = cv2.bitwise_not(skeleton)
 
-# cv2.imshow('Original Image', original)
-# cv2.imshow('Thinned Skeleton', skeleton_inverted)
+cv2.imshow('Original Image', original)
+cv2.imshow('Thinned Skeleton', skeleton_inverted)
 
 points = []
 

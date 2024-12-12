@@ -262,6 +262,9 @@ def traj2ref(Xref):
     
     return pos, vel, acc, ori, rollrate, pitchrate, yawrate
 
+def clamp(value, min_value, max_value):
+    return max(min_value, min(value, max_value))
+
 def recover_traj(current_pos, desired_pos, desired_vel):
     x1 = current_pos.copy()  # Start point
     x2 = desired_pos.copy()  # End point
@@ -314,6 +317,17 @@ def recover_traj(current_pos, desired_pos, desired_vel):
         ]
 
         print('done!')
+        print('pos: ', pos)
+        print('vel: ', vel)
+        print('acc: ', acc)
+
+        vel = [clamp(v, -1e-1, 1e1) for v in vel]
+        acc = [clamp(a, -1e-2, 1e-2) for a in acc]
+
+        print('post clamp!')
+        print('vel: ', vel)
+        print('acc: ', acc)
+        
         send_continuous_setpoint(scf.cf, dt, pos, vel, acc, 
                                  [1.,0.,0.,0.], 0., 0., 0.)
 
